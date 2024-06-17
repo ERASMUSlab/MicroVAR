@@ -1,0 +1,512 @@
+---
+title: "MicroVAR Tutorial"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(MicroVAR)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## 16s rRNA Analysis Preprocessing
+
+### Data Preprocessing 
+Preprocessing of 16S rRNA (Amplicon) using QIIME2.   
+Utilized the 2023.07 version.
+
+```{bash, eval = FALSE, echo = TRUE}
+# Perform denoising of paired-end sequences using DADA2
+qiime dada2 denoise-paired \
+--i-demultiplexed-seqs work/paired-end-demux.qza \
+--p-trunc-len-f ${forward} \
+--p-trunc-len-r ${reverse} \
+--o-table work/table.qza \
+--o-representative-sequences work/rep-seqs.qza \
+--o-denoising-stats work/denoising-stats.qza
+
+# Generate a phylogenetic tree using MAFFT and FastTree
+qiime phylogeny align-to-tree-mafft-fasttree \
+--i-sequences work/rep-seqs.qza \
+--o-alignment work/aligned-rep-seqs.qza \
+--o-masked-alignment work/masked-aligned-rep-seqs.qza \
+--o-tree work/unrooted-tree.qza \
+--o-rooted-tree work/rooted-tree.qza
+
+# Create a directory for output files
+mkdir output
+
+# Export the OTU table to the output directory
+qiime tools export \
+--input-path work/table.qza \
+--output-path output
+
+# Convert the OTU table from biom format to tsv format
+biom convert \
+-i output/feature-table.biom \
+-o output/otu_table.tsv \
+--to-tsv
+
+# Clean up the tsv file by removing the first line and modifying the header
+cd output
+sed -i '1d' otu_table.tsv
+sed -i 's/#OTU ID//' otu_table.tsv
+cd ../
+
+# Export the representative sequences to the output directory
+qiime tools export \
+--input-path work/rep-seqs.qza \
+--output-path output
+
+# Export the unrooted tree file to the output directory
+qiime tools export \
+--input-path work/unrooted-tree.qza \
+--output-path output
+cd output
+mv tree.nwk unrooted_tree.nwk
+cd ../
+
+# Export the rooted tree file to the output directory
+qiime tools export \
+--input-path work/rooted-tree.qza \
+--output-path output
+cd output
+mv tree.nwk rooted_tree.nwk
+cd ../
+```
+Preprocessing using QIIME2 is almost complete, except for the taxonomy classification process.  
+Before proceeding with the final step, you need to set up the classifier. You can download and use classifiers provided at https://resources.qiime2.org/, or you can train one yourself using QIIME2's feature-classifier. Here, we used the reference data from Greengenes version 2022.10 and trained it using the Naive Bayes method. This classifier is also available at https://resources.qiime2.org/.
+
+The following code classifies taxa using the classifier.
+```{bash, eval = FALSE, echo = TRUE}
+# Classify the sequences using a pre-trained classifier
+qiime feature-classifier classify-sklearn \
+  --i-reads work/rep-seqs.qza \
+  --i-classifier ${classifier} \
+  --o-classification work/taxonomy.qza
+
+# Export the taxonomy classification results to the output directory
+qiime tools export \
+--input-path work/taxonomy.qza \
+--output-path output
+```
+
+As an additional preprocessing step, functional prediction was performed using Picrust2
+```{bash, eval = FALSE, echo = TRUE}
+# Convert the OTU table from TSV format to BIOM format
+biom convert -i output/otu_table.tsv -o work/asv_picrust.biom --table-type="OTU table" --to-json
+
+# Run the PICRUSt2 pipeline for functional prediction
+picrust2_pipeline.py -s output/dna-sequences.fasta -i work/asv_picrust.biom -o work/picrust_result/
+
+# Copy the predicted metagenome results to the output directory
+cp work/picrust_result/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz output/picrust.tsv.gz
+```
+## Shotgun Metagenomics 
+
+### Data Preprocessing 
+We will perform sample preprocessing using FastQC, Trim Galore, Bowtie2, and Samtools, 
+followed by reference-based taxonomy classification using Kraken2 and Bracken.
+
+Sample preprocessing
+```{bash, eval = FALSE, echo = TRUE}
+samples_file="data/sample.txt"
+samples=($(<"$samples_file"))
+
+mkdir -p work/trim_seq
+
+# Loop through each sample and run Trim Galore for paired-end trimming
+for sample in "${samples[@]}"; do
+    trim_galore --paired "data/${sample}_1.fastq" "data/${sample}_2.fastq" --output_dir work/trim_seq
+done
+
+cd work/trimseq
+
+mkdir trimming_report 
+mv *.txt trimming_report
+
+# Script to remove host sequences using Bowtie2 and convert output to BAM format using Samtools
+mkdir -p work/host_removed_seq
+
+# Loop through each sample and run Bowtie2 for host sequence removal
+for sample in "${samples[@]}"; do
+    bowtie2 -p 15 -x DB/h19_index/hg19 \
+    -1 "work/trim_seq/${sample}_1_val_1.fq" \
+    -2 "work/trim_seq/${sample}_2_val_2.fq" \
+    --very-sensitive-local \
+    --un-conc-gz "work/host_removed_seq/${sample}_host_removed" \
+    > "work/host_removed_seq/${sample}_mapped_and_unmapped.sam"
+
+    # Rename the output files for host removed sequences
+    mv "work/host_removed_seq/${sample}_host_removed.1" "work/host_removed_seq/${sample}_host_removed_1.fastq.gz"
+    mv "work/host_removed_seq/${sample}_host_removed.2" "work/host_removed_seq/${sample}_host_removed_2.fastq.gz"
+    
+    # Convert SAM file to BAM format using Samtools and remove the original SAM file
+    samtools view -bS work/host_removed_seq/${sample}_mapped_and_unmapped.sam > work/host_removed_seq/${sample}_mapped_and_unmapped.bam
+    rm work/host_removed_seq/${sample}_mapped_and_unmapped.sam
+done 
+```
+
+Taxonomy classification
+```{bash, eval = FALSE, echo = TRUE}
+(base) [kcy@snu command]$ cat 2_1_taxonomy_kraken.sh 
+samples_file="data/sample.txt"
+samples=($(<"$samples_file"))
+
+# Set the database path for Kraken2
+DB=DB/k2_standard_20231009
+
+mkdir -p output/kraken
+
+# Loop through each sample and run Kraken2 for taxonomy classification
+for sample in "${samples[@]}"; do
+    R1="work/host_removed_seq/${sample}_host_removed_1.fastq.gz"
+    R2="work/host_removed_seq/${sample}_host_removed_2.fastq.gz"
+    kraken2 \
+        --db $DB \
+        --threads 70 \
+        --confidence 0.5 \
+        --minimum-base-quality 22 \
+        --report output/kraken/${sample}.report \
+        --paired $R1 $R2 \
+        > output/kraken/${sample}.txt
+done
+
+mkdir -p output/bracken
+
+# Loop through each sample and run Bracken for abundance estimation
+for sample in "${samples[@]}"; do
+    K2_REPORT="output/kraken/${sample}.report"
+
+    bracken \
+        -d $DB \
+        -i $K2_REPORT \
+        -o output/bracken/${sample}.bracken \
+        -w output/bracken/${sample}_bracken_species.report \
+        -r 150 \
+        -l S
+done
+
+# Convert Bracken reports to a BIOM file format
+kraken-biom output/bracken/*.report --fmt json -o output/bracken/taxa.biom
+```
+## Data Analyses
+
+With the preprocessed data, you can perform microbiome analysis using the MicroVAR package.  
+  - Data integration    
+  - Alpha diversity analysis  
+  - Beta diversity analysis  
+  - Taxonomy analysis  
+  - Differential abundance analysis  
+
+
+
+## Data integration
+### Begin microbiome analysis using the MicroVAR package in R
+
+Download and load the MicroVAR package
+```{r, eval = FALSE, echo = TRUE}
+# install.packages("devtools")
+devtools::install_github("ERASMUSlab/MicroVAR")
+
+library(MicroVAR)
+```
+
+### Creating Phyloseq Data
+```{r, message=F, warning=F, error=T, echo = TRUE}
+metadata_path <- system.file("extdata", "AmpliconMetadata.csv", package = "MicroVAR")
+asv_path <- system.file("extdata", "AmpliconASV.tsv", package = "MicroVAR")
+taxa_path <- system.file("extdata", "AmpliconTaxonomy.tsv", package = "MicroVAR")
+tree_path <- system.file("extdata", "AmpliconRootedTree.nwk", package = "MicroVAR")
+
+amplicon <<- createAmpPhylo(metadata_path = metadata_path,
+                            asv_path = asv_path, 
+                            taxa_path = taxa_path, 
+                            tree_path = tree_path)
+amplicon
+```
+
+```{r, message=F, warning=F, error=T, echo = TRUE}
+metadata_path <- system.file("extdata", "ShotgunMetadata.csv", package = "MicroVAR")
+biom_path <- system.file("extdata", "ShotgunBiomData.biom", package = "MicroVAR")
+
+shotgun <<- createShotPhylo(biom_path = biom_path, 
+                            metadata_path = metadata_path)
+shotgun
+
+```
+
+## Alpha diversity analysis
+
+### Amplicon data 
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+shannon <- plotAlphaDiversity(phyloseq = amplicon, 
+                              condition_col = "condition", 
+                              condition_label = c("Fl","Fl_Arg"), 
+                              colors = c('#FFA726','#26A69A'),
+                              measure = "Shannon",
+                              text_size = 15)
+shannon
+
+observed <- plotAlphaDiversity(phyloseq = amplicon,
+                               condition_col = "condition", 
+                               condition_label = c("Fl", "Fl_Arg"), 
+                               colors = c('#FFA726','#26A69A'), 
+                               measure ="Observed",
+                               text_size = 15)
+observed
+
+simpson <- plotAlphaDiversity(phyloseq = amplicon,
+                              condition_col = "condition",
+                              condition_label = c("Fl", "Fl_Arg"),
+                              colors = c('#FFA726','#26A69A'), 
+                              measure ="Simpson",
+                              text_size = 15)
+simpson
+
+chao1 <- plotAlphaDiversity(phyloseq = amplicon,  
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="Chao1",text_size = 15)
+
+chao1 
+```
+
+### Shotgun data 
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+shannon <- plotAlphaDiversity(phyloseq = shotgun, 
+                              condition_col = "condition", 
+                              condition_label = c("Fl","Fl_Arg"), 
+                              colors = c('#FFA726','#26A69A'),
+                              measure = "Shannon",
+                              text_size = 15)
+shannon
+
+observed <- plotAlphaDiversity(phyloseq = shotgun,
+                               condition_col = "condition", 
+                               condition_label = c("Fl", "Fl_Arg"), 
+                               colors = c('#FFA726','#26A69A'), 
+                               measure ="Observed",
+                               text_size = 15)
+observed
+
+simpson <- plotAlphaDiversity(phyloseq = shotgun,
+                              condition_col = "condition",
+                              condition_label = c("Fl", "Fl_Arg"),
+                              colors = c('#FFA726','#26A69A'), 
+                              measure ="Simpson",
+                              text_size = 15)
+simpson
+
+chao1 <- plotAlphaDiversity(phyloseq = shotgun,  
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="Chao1",text_size = 15)
+
+chao1 
+```
+
+## Beta diversity analysis
+
+### Amplicon data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+jaccard = plotBetaDiversity(phyloseq = amplicon,
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="jaccard",
+                            text_size = 15)
+jaccard
+
+bray = plotBetaDiversity(phyloseq = amplicon, 
+                         condition_col = "condition", 
+                         condition_label = c("Fl", "Fl_Arg"), 
+                         colors = c('#FFA726','#26A69A'), 
+                         measure ="bray",
+                         text_size = 15)
+bray
+
+wunifrac = plotBetaDiversity(phyloseq = amplicon,
+                             condition_col = "condition", 
+                             condition_label = c("Fl", "Fl_Arg"), 
+                             colors = c('#FFA726','#26A69A'), 
+                             measure ="wunifrac",
+                             text_size = 15)
+wunifrac
+
+unifrac = plotBetaDiversity(phyloseq = amplicon, 
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="unifrac",
+                            text_size = 15)
+unifrac
+```
+
+
+### Shotgun data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+jaccard = plotBetaDiversity(phyloseq = shotgun,
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="jaccard",
+                            text_size = 15)
+jaccard
+
+bray = plotBetaDiversity(phyloseq = shotgun, 
+                         condition_col = "condition", 
+                         condition_label = c("Fl", "Fl_Arg"), 
+                         colors = c('#FFA726','#26A69A'), 
+                         measure ="bray",
+                         text_size = 15)
+bray
+
+wunifrac = plotBetaDiversity(phyloseq = shotgun,
+                             condition_col = "condition", 
+                             condition_label = c("Fl", "Fl_Arg"), 
+                             colors = c('#FFA726','#26A69A'), 
+                             measure ="wunifrac",
+                             text_size = 15)
+wunifrac
+
+unifrac = plotBetaDiversity(phyloseq = shotgun, 
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="unifrac",
+                            text_size = 15)
+unifrac
+```
+
+## Taxonomy analysis 
+
+### Amplicon data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+
+phylum_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Phylum",
+                                keep_percent = 1,
+                                text_size = 10)
+phylum_taxa
+
+class_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Class",
+                                keep_percent = 1,
+                                text_size = 10)
+class_taxa
+
+order_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Order",
+                                keep_percent = 1,
+                                text_size = 10)
+order_taxa
+
+family_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Family",
+                                keep_percent = 1,
+                                text_size = 7)
+family_taxa
+
+genus_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                               condition_label = c("Fl","Fl_Arg"),
+                               taxa_level = "Genus",
+                               keep_percent = 1,
+                               text_size = 7)
+genus_taxa
+
+species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                 condition_label = c("Fl","Fl_Arg"),
+                                 taxa_level = "Species",
+                                 keep_percent = 1,
+                                 text_size = 10)
+species_taxa
+```
+
+### Shotgun data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
+
+phylum_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Phylum",
+                                keep_percent = 1,
+                                text_size = 10)
+phylum_taxa
+
+class_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Class",
+                                keep_percent = 1,
+                                text_size = 10)
+class_taxa
+
+order_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Order",
+                                keep_percent = 1,
+                                text_size = 10)
+order_taxa
+
+family_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Family",
+                                keep_percent = 1,
+                                text_size = 10)
+family_taxa
+
+genus_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                               condition_label = c("Fl","Fl_Arg"),
+                               taxa_level = "Genus",
+                               keep_percent = 1,
+                               text_size = 7)
+genus_taxa
+
+species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                 condition_label = c("Fl","Fl_Arg"),
+                                 taxa_level = "Species",
+                                 keep_percent = 1,
+                                 text_size = 6)
+species_taxa
+```
+
+
+## Differential abundance analysis
+### Amplicon data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
+plotHeatTree(phyloseq = amplicon,
+             taxa_p = 0.1,
+             seed = 0,
+             p_adjust = "BH",
+             group ="condition",
+             condition_label = c("Fl", "Fl_Arg"),
+             pvalue_cutoff = 0.05, 
+             norm = "TSS",
+             clade_label_level = 7,
+             lade_label_font_size = 10,
+             colors = c('#FFA726','#26A69A'),
+             text_size = 10)
+```
+
+### Shotgun data
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
+plotHeatTree(phyloseq = shotgun,
+             taxa_p = 0.1,
+             seed = 0,
+             p_adjust = "BH",
+             group ="condition",
+             condition_label = c("Fl", "Fl_Arg"),
+             pvalue_cutoff = 0.05, 
+             norm = "TSS",
+             clade_label_level = 7,
+             lade_label_font_size = 10,
+             colors = c('#FFA726','#26A69A'),
+             text_size = 10)
+```

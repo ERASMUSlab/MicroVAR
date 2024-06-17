@@ -1,0 +1,24 @@
+Package: MicroVAR
+Title: Integrated microbiome analysis package.
+Version: 1.0.0
+Authors@R: 
+    person("Chaeyeon", "Kim", , "201chaenny@naver.com", role = c("aut", "cre"))
+Description: Integrated microbiome analysis package.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+URL: https://github.com/ERASMUSlab/MicroVAR
+BugReports: https://github.com/ERASMUSlab/MicroVAR/issues
+Imports: 
+    dplyr,
+    ggpicrust2,
+    ggplot2,
+    microbiomeMarker,
+    phyloseq,
+    stringr,
+    tidyr
+Depends: 
+    tidyverse
+Suggests: 
+    learnr
