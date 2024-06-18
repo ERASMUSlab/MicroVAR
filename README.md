@@ -23,7 +23,7 @@ It integrates 16S rRNA data and shotgun metagenomics data using Phyloseq, genera
 
 ## Tools Comparison
 <p align="center">
-  <img src="./Image/tools.png" alt="MicroVAR" width="613" height="100"/>
+  <img src="./Image/tools.png" alt="MicroVAR" width="735" height="120"/>
 </p>
 
 ## Learn more
