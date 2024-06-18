@@ -66,7 +66,7 @@ picrust2_pipeline.py
 * Kraken2
 * Bracken  
 
-For more details, please refer to [this tutorial.](https://github.com/ERASMUSlab/MicroVAR/blob/master/inst/tutorials/MicroVAR/Tutorial.html)
+For more details, please refer to [this tutorial.](https://erasmuslab.github.io/MicroVAR/Tutorial.html)
 or Tutorial running
 ``` r
 learnr::run_tutorial(name="MicroVAR",package ="MicroVAR")
