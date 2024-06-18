@@ -19,8 +19,12 @@ It integrates 16S rRNA data and shotgun metagenomics data using Phyloseq, genera
 - Microbial interaction networks map the relationships and interactions between different microbial species within a community. These networks reveal how species influence each other, which can help in understanding ecosystem stability and dynamics.
 - Functional profiling assesses the functional capabilities of a microbial community by identifying the genes or pathways present. It provides insights into the metabolic activities and potential functions of the community, such as nutrient cycling or disease associations.
 
-<img src="./Image/Overview.png" alt="Picrust" width="800" height="400"/>
+<img src="./Image/Overview.png" alt="MicroVAR" width="800" height="400"/>
 
+## Tools Comparison
+<p align="center">
+  <img src="./Image/tools.png" alt="MicroVAR" width="200" height="200"/>
+</p>
 
 ## Learn more
 * [This tutorial](https://erasmuslab.github.io/MicroVAR/Tutorial.html) provides more detailed example analyses.

@@ -1,6 +1,7 @@
 ---
 title: "MicroVAR Tutorial"
-output: learnr::tutorial
+output: 
+  learnr::tutorial
 runtime: shiny_prerendered
 ---
 
@@ -10,11 +11,11 @@ library(MicroVAR)
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-
 ## 16s rRNA Analysis Preprocessing
 
-### Data Preprocessing 
-Preprocessing of 16S rRNA (Amplicon) using QIIME2.   
+### Data Preprocessing
+
+Preprocessing of 16S rRNA (Amplicon) using QIIME2.\
 Utilized the 2023.07 version.
 
 ```{bash, eval = FALSE, echo = TRUE}
@@ -76,10 +77,12 @@ cd output
 mv tree.nwk rooted_tree.nwk
 cd ../
 ```
-Preprocessing using QIIME2 is almost complete, except for the taxonomy classification process.  
-Before proceeding with the final step, you need to set up the classifier. You can download and use classifiers provided at https://resources.qiime2.org/, or you can train one yourself using QIIME2's feature-classifier. Here, we used the reference data from Greengenes version 2022.10 and trained it using the Naive Bayes method. This classifier is also available at https://resources.qiime2.org/.
+
+Preprocessing using QIIME2 is almost complete, except for the taxonomy classification process.\
+Before proceeding with the final step, you need to set up the classifier. You can download and use classifiers provided at <https://resources.qiime2.org/>, or you can train one yourself using QIIME2's feature-classifier. Here, we used the reference data from Greengenes version 2022.10 and trained it using the Naive Bayes method. This classifier is also available at <https://resources.qiime2.org/>.
 
 The following code classifies taxa using the classifier.
+
 ```{bash, eval = FALSE, echo = TRUE}
 # Classify the sequences using a pre-trained classifier
 qiime feature-classifier classify-sklearn \
@@ -94,6 +97,7 @@ qiime tools export \
 ```
 
 As an additional preprocessing step, functional prediction was performed using Picrust2
+
 ```{bash, eval = FALSE, echo = TRUE}
 # Convert the OTU table from TSV format to BIOM format
 biom convert -i output/otu_table.tsv -o work/asv_picrust.biom --table-type="OTU table" --to-json
@@ -104,13 +108,15 @@ picrust2_pipeline.py -s output/dna-sequences.fasta -i work/asv_picrust.biom -o w
 # Copy the predicted metagenome results to the output directory
 cp work/picrust_result/KO_metagenome_out/pred_metagenome_unstrat.tsv.gz output/picrust.tsv.gz
 ```
-## Shotgun Metagenomics 
 
-### Data Preprocessing 
-We will perform sample preprocessing using FastQC, Trim Galore, Bowtie2, and Samtools, 
-followed by reference-based taxonomy classification using Kraken2 and Bracken.
+## Shotgun Metagenomics
+
+### Data Preprocessing
+
+We will perform sample preprocessing using FastQC, Trim Galore, Bowtie2, and Samtools, followed by reference-based taxonomy classification using Kraken2 and Bracken.
 
 Sample preprocessing
+
 ```{bash, eval = FALSE, echo = TRUE}
 samples_file="data/sample.txt"
 samples=($(<"$samples_file"))
@@ -150,6 +156,7 @@ done
 ```
 
 Taxonomy classification
+
 ```{bash, eval = FALSE, echo = TRUE}
 (base) [kcy@snu command]$ cat 2_1_taxonomy_kraken.sh 
 samples_file="data/sample.txt"
@@ -192,21 +199,22 @@ done
 # Convert Bracken reports to a BIOM file format
 kraken-biom output/bracken/*.report --fmt json -o output/bracken/taxa.biom
 ```
+
 ## Data Analyses
 
-With the preprocessed data, you can perform microbiome analysis using the MicroVAR package.  
-  - Data integration    
-  - Alpha diversity analysis  
-  - Beta diversity analysis  
-  - Taxonomy analysis  
-  - Differential abundance analysis  
-
-
+With the preprocessed data, you can perform microbiome analysis using the MicroVAR package.\
+- Data integration\
+- Alpha diversity analysis\
+- Beta diversity analysis\
+- Taxonomy analysis\
+- Differential abundance analysis
 
 ## Data integration
+
 ### Begin microbiome analysis using the MicroVAR package in R
 
 Download and load the MicroVAR package
+
 ```{r, eval = FALSE, echo = TRUE}
 # install.packages("devtools")
 devtools::install_github("ERASMUSlab/MicroVAR")
@@ -215,6 +223,7 @@ library(MicroVAR)
 ```
 
 ### Creating Phyloseq Data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE}
 metadata_path <- system.file("extdata", "AmpliconMetadata.csv", package = "MicroVAR")
 asv_path <- system.file("extdata", "AmpliconASV.tsv", package = "MicroVAR")
@@ -240,7 +249,8 @@ shotgun
 
 ## Alpha diversity analysis
 
-### Amplicon data 
+### Amplicon data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 shannon <- plotAlphaDiversity(phyloseq = amplicon, 
                               condition_col = "condition", 
@@ -275,7 +285,8 @@ chao1 <- plotAlphaDiversity(phyloseq = amplicon,
 chao1 
 ```
 
-### Shotgun data 
+### Shotgun data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 shannon <- plotAlphaDiversity(phyloseq = shotgun, 
                               condition_col = "condition", 
@@ -313,6 +324,7 @@ chao1
 ## Beta diversity analysis
 
 ### Amplicon data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 jaccard = plotBetaDiversity(phyloseq = amplicon,
                             condition_col = "condition", 
@@ -347,8 +359,8 @@ unifrac = plotBetaDiversity(phyloseq = amplicon,
 unifrac
 ```
 
-
 ### Shotgun data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 jaccard = plotBetaDiversity(phyloseq = shotgun,
                             condition_col = "condition", 
@@ -366,14 +378,6 @@ bray = plotBetaDiversity(phyloseq = shotgun,
                          text_size = 15)
 bray
 
-wunifrac = plotBetaDiversity(phyloseq = shotgun,
-                             condition_col = "condition", 
-                             condition_label = c("Fl", "Fl_Arg"), 
-                             colors = c('#FFA726','#26A69A'), 
-                             measure ="wunifrac",
-                             text_size = 15)
-wunifrac
-
 unifrac = plotBetaDiversity(phyloseq = shotgun, 
                             condition_col = "condition", 
                             condition_label = c("Fl", "Fl_Arg"), 
@@ -383,9 +387,10 @@ unifrac = plotBetaDiversity(phyloseq = shotgun,
 unifrac
 ```
 
-## Taxonomy analysis 
+## Taxonomy analysis
 
 ### Amplicon data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 
 phylum_taxa <- plotTaxonomyBars(phyloseq = amplicon,
@@ -432,6 +437,7 @@ species_taxa
 ```
 
 ### Shotgun data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=5}
 
 phylum_taxa <- plotTaxonomyBars(phyloseq = shotgun,
@@ -477,9 +483,10 @@ species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
 species_taxa
 ```
 
-
 ## Differential abundance analysis
+
 ### Amplicon data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
 plotHeatTree(phyloseq = amplicon,
              taxa_p = 0.1,
@@ -496,6 +503,7 @@ plotHeatTree(phyloseq = amplicon,
 ```
 
 ### Shotgun data
+
 ```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
 plotHeatTree(phyloseq = shotgun,
              taxa_p = 0.1,
