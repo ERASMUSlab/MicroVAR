@@ -23,7 +23,7 @@ It integrates 16S rRNA data and shotgun metagenomics data using Phyloseq, genera
 
 
 ## Learn more
-* [This tutorial](https://github.com/ERASMUSlab/MicroVAR/blob/master/inst/tutorials/microvar/Tutorial.html) provides more detailed example analyses.
+* [This tutorial](https://erasmuslab.github.io/MicroVAR/Tutorial.html) provides more detailed example analyses.
 
 * We conducted analyses using some of the shotgun raw data from the paper by [Carda-Diéguez, M., Moazzez, R. & Mira, A. Functional changes in the oral microbiome after use of fluoride and arginine containing dentifrices: a metagenomic and metatranscriptomic study. Microbiome 10, 159 (2022).](https://doi.org/10.1186/s40168-022-01338-4) 
 
