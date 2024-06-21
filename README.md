@@ -31,13 +31,15 @@ It integrates 16S rRNA data and shotgun metagenomics data using Phyloseq, genera
 ## Learn more
 * [This tutorial](https://erasmuslab.github.io/MicroVAR/Tutorial.html) provides more detailed example analyses.
 
-* We conducted analyses using some of the shotgun raw data from the paper by [Carda-Diéguez, M., Moazzez, R. & Mira, A. Functional changes in the oral microbiome after use of fluoride and arginine containing dentifrices: a metagenomic and metatranscriptomic study. Microbiome 10, 159 (2022).](https://doi.org/10.1186/s40168-022-01338-4) 
+* We conducted analyses using some of the raw data from the paper by [Carda-Diéguez, M., Moazzez, R. & Mira, A. Functional changes in the oral microbiome after use of fluoride and arginine containing dentifrices: a metagenomic and metatranscriptomic study. Microbiome 10, 159 (2022).](https://doi.org/10.1186/s40168-022-01338-4) 
 
-* We conducted analyses using some of the amplicon raw data from the paper by [Zhang Z, Feng Q, Li M, Li Z, Xu Q, Pan X and Chen W (2022) Age-Related Cancer-Associated Microbiota Potentially Promotes Oral Squamous Cell Cancer Tumorigenesis by Distinct Mechanisms. Front. Microbiol. 13:852566.](https://doi.org/10.3389/fmicb.2022.852566)
+* We conducted analyses using some of the amplicon raw data from the paper by [Zhang Z, Feng Q, Li M, Li Z, Xu Q, Pan X and Chen W (2022) Age-Related Cancer-Associated Microbiota Potentially Promotes Oral Squamous Cell Cancer Tumorigenesis by Distinct Mechanisms. Front. Microbiol. 13:852566.](https://doi.org/10.3389/fmicb.2022.852566). This is the data for the README page.
 
 * The raw data was downloaded from [this BioProject.](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA712952/)
+and [this BioProject](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA803155/)
 
-* The preprocessed data used in the example can be downloaded from the link below.
+
+* The preprocessed data used in the example can be downloaded from the link below. If you install a package, you can also load data from within the package.
   - Download the amplicon metadata from [here.](https://github.com/ERASMUSlab/MicroVAR/blob/master/SampleData/AmpliconMetadata.csv)
   - Download the amplicon ASV data from [here.](https://github.com/ERASMUSlab/MicroVAR/blob/master/SampleData/AmpliconASV.tsv)
   - Download the amplicon taxanomy data from [here.](https://github.com/ERASMUSlab/MicroVAR/blob/master/SampleData/AmpliconTaxonomy.tsv)
