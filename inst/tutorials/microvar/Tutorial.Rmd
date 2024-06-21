@@ -502,7 +502,7 @@ plotHeatTree(phyloseq = amplicon,
              text_size = 10)
 ```
 
-```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=10, out.width='100%', out.height='100%'}
 plotHeatMap(phyloseq = amplicon,
             taxa_p = 0.1,
             seed = 0,
@@ -512,7 +512,6 @@ plotHeatMap(phyloseq = amplicon,
             pvalue_cutoff = 0.05,
             norm = "TSS",
             annotation_colors = c('#FFA726', '#26A69A'))
-plotHeatMap
 ```
 
 ### Shotgun data
@@ -532,7 +531,7 @@ plotHeatTree(phyloseq = shotgun,
              text_size = 10)
 ```
 
-```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=20, fig.height=10, out.width='100%', out.height='100%'}
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=10, out.width='100%', out.height='100%'}
 plotHeatMap(phyloseq = shotgun,
             taxa_p = 0.1,
             seed = 0,
