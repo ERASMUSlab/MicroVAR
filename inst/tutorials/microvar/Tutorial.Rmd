@@ -512,6 +512,7 @@ plotHeatMap(phyloseq = amplicon,
             pvalue_cutoff = 0.05,
             norm = "TSS",
             annotation_colors = c('#FFA726', '#26A69A'))
+plotHeatMap
 ```
 
 ### Shotgun data
