@@ -1,8 +1,8 @@
 plotHeatMap <- function(phyloseq, taxa_p = 0.1, seed = 0, p_adjust = "BH", group = "condition", condition_label = c("Fl", "Fl_Arg"), pvalue_cutoff = 0.05, norm = "TSS", annotation_colors = c('#FFA726','#26A69A')) {
 
-  ps.rel = transform_sample_counts(phyloseq, function(x) x/sum(x)*100)
+  ps.rel = phyloseq::transform_sample_counts(phyloseq, function(x) x/sum(x)*100)
   selected_logical <<- rowSums(otu_table(ps.rel) > taxa_p) > 0
-  ps.rel.filter = subset_taxa(phyloseq, selected_logical)
+  ps.rel.filter = phyloseq::subset_taxa(phyloseq, selected_logical)
 
   set.seed(seed)
 
@@ -47,18 +47,18 @@ plotHeatMap <- function(phyloseq, taxa_p = 0.1, seed = 0, p_adjust = "BH", group
     Category = setNames(annotation_colors, condition_label)
   )
 
-  sorted_colnames <- mixedsort(colnames(normalized_data_fa))
+  sorted_colnames <- gtools::mixedsort(colnames(normalized_data_fa))
   normalized_data_fa <- normalized_data_fa[, sorted_colnames]
 
   options(repr.plot.width = 3, repr.plot.height = 6)
-  pheatmap(normalized_data_fa,
-           cluster_rows = F,
-           cluster_cols = F,
-           show_colnames = F,
-           show_rownames = F,
-           fontsize_col = 5,
-           annotation_col = column_annotations,
-           annotation_colors = annotation_colors,
-           breaks = seq(from = -2, to = 2, length.out = 100)
+  pheatmap::pheatmap(normalized_data_fa,
+            cluster_rows = F,
+            cluster_cols = F,
+            show_colnames = F,
+            show_rownames = F,
+            fontsize_col = 5,
+            annotation_col = column_annotations,
+            annotation_colors = annotation_colors,
+            breaks = seq(from = -2, to = 2, length.out = 100)
   )
 }
