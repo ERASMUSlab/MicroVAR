@@ -1,0 +1,10 @@
+name: microvar
+title:
+username: erasmuslab
+account: erasmuslab
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12208494
+bundleId: 8766422
+url: https://erasmuslab.shinyapps.io/microvar/
+version: 1

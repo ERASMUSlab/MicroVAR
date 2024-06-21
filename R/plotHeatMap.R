@@ -1,9 +1,8 @@
-plotHeatMap <- function(phyloseq, taxa_p, seed, p_adjust = "BH", group, condition_label, pvalue_cutoff = 0.05, norm = "TSS",
-                        colors = c('#F06292','#4DD0E1'),cluster_rows = F, cluster_cols = T, show_colnames = F, show_rownames = F ) {
+plotHeatMap <- function(phyloseq, taxa_p = 0.1, seed = 0, p_adjust = "BH", group = "condition", condition_label = c("Fl", "Fl_Arg"), pvalue_cutoff = 0.05, norm = "TSS", annotation_colors = c('#FFA726','#26A69A')) {
 
-  ps.rel <- transform_sample_counts(phyloseq, function(x) x/sum(x)*100)
-  selected_logical <- rowSums(otu_table(ps.rel) > taxa_p) > 0
-  ps.rel.filter <- subset_taxa(phyloseq, selected_logical)
+  ps.rel = transform_sample_counts(phyloseq, function(x) x/sum(x)*100)
+  selected_logical <<- rowSums(otu_table(ps.rel) > taxa_p) > 0
+  ps.rel.filter = subset_taxa(phyloseq, selected_logical)
 
   set.seed(seed)
 
@@ -14,11 +13,11 @@ plotHeatMap <- function(phyloseq, taxa_p, seed, p_adjust = "BH", group, conditio
                             pvalue_cutoff = pvalue_cutoff,
                             norm = norm)
 
-  otu <- otu_table(ancom_output)
-  otu <- data.frame(otu)
+  otu = otu_table(ancom_output)
+  otu = as.data.frame(otu)
 
-  markers <- marker_table(ancom_output)
-  markers <- data.frame(markers)
+  markers = marker_table(ancom_output)
+  markers = data.frame(markers)
 
   features <- markers$feature
   otu_selected <- otu[rownames(otu) %in% features, ]
@@ -27,36 +26,39 @@ plotHeatMap <- function(phyloseq, taxa_p, seed, p_adjust = "BH", group, conditio
     return((x - mean(x)) / sd(x))
   }
 
-  markers_group1 <- markers[markers$enrich_group == condition_label[1], ]
-  features_group1 <- markers_group1$feature
-  otu_selected_group1 <- otu[rownames(otu) %in% features_group1, ]
+  markers_Fl = markers[markers$enrich_group == condition_label[1], ]
+  features_Fl = markers_Fl$feature
+  otu_selected_Fl = otu[rownames(otu) %in% features_Fl, ]
 
-  markers_group2 <- markers[markers$enrich_group == condition_label[2], ]
-  features_group2 <- markers_group2$feature
-  otu_selected_group2 <- otu[rownames(otu) %in% features_group2, ]
+  markers_Fl_Arg = markers[markers$enrich_group == condition_label[2], ]
+  features_Fl_Arg = markers_Fl_Arg$feature
+  otu_selected_Fl_Arg = otu[rownames(otu) %in% features_Fl_Arg, ]
 
-  otu_select_data <- rbind(otu_selected_group1, otu_selected_group2)
-  normalized_data_fa <- t(apply(otu_select_data, 1, zscore_normalization))
+  otu_select_data = rbind(otu_selected_Fl, otu_selected_Fl_Arg)
+  normalized_data_fa = t(apply(otu_select_data, 1, zscore_normalization))
 
+  sample_counts <- table(sample_data(phyloseq)[[group]])
   column_annotations <- data.frame(
-    Category = c(rep(condition_label[1], ncol(otu_selected_group1)), rep(condition_label[2], ncol(otu_selected_group2)))
+    Category = factor(c(rep(condition_label[1], sample_counts[condition_label[1]]), rep(condition_label[2], sample_counts[condition_label[2]])), levels = condition_label)
   )
   rownames(column_annotations) <- colnames(normalized_data_fa)
 
   annotation_colors <- list(
-    Category = setNames(colors, condition_label)
+    Category = setNames(annotation_colors, condition_label)
   )
 
+  sorted_colnames <- mixedsort(colnames(normalized_data_fa))
+  normalized_data_fa <- normalized_data_fa[, sorted_colnames]
 
   options(repr.plot.width = 3, repr.plot.height = 6)
-  pheatmap(
-    normalized_data_fa,
-    cluster_rows = cluster_rows,
-    cluster_cols = cluster_cols,
-    show_colnames = show_colnames,
-    show_rownames = show_rownames,
-    annotation_col = column_annotations,
-    annotation_colors = annotation_colors,
-    breaks = seq(from = -2, to = 2, length.out = 100)
+  pheatmap(normalized_data_fa,
+           cluster_rows = F,
+           cluster_cols = F,
+           show_colnames = F,
+           show_rownames = F,
+           fontsize_col = 5,
+           annotation_col = column_annotations,
+           annotation_colors = annotation_colors,
+           breaks = seq(from = -2, to = 2, length.out = 100)
   )
 }

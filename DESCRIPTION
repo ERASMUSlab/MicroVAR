@@ -17,7 +17,9 @@ Imports:
     microbiomeMarker,
     phyloseq,
     stringr,
-    tidyr
+    tidyr,
+    gtools,
+    pheatmap
 Depends: 
     tidyverse
 Suggests: 

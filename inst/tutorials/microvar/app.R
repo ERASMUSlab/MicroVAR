@@ -1,4 +1,9 @@
 library(learnr)
+library(shiny)
 
-tutorial_dir <- system.file("tutorials/microvar", package = "MicroVAR")
-shinyAppDir(tutorial_dir)
+# Define the path to the Rmd tutorial file
+tutorial_file <- "Tutorial.Rmd"
+
+# Launch the tutorial
+rmarkdown::run(tutorial_file)
+
