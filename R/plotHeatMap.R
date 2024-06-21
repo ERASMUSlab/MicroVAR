@@ -59,6 +59,6 @@ plotHeatMap <- function(phyloseq, taxa_p = 0.1, seed = 0, p_adjust = "BH", group
             fontsize_col = 5,
             annotation_col = column_annotations,
             annotation_colors = annotation_colors,
-            breaks = seq(from = -2, to = 2, length.out = 100)
+            breaks = seq(from = -1.3, to = 1.3, length.out = 100)
   )
 }

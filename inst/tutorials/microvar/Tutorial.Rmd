@@ -502,7 +502,7 @@ plotHeatTree(phyloseq = amplicon,
              text_size = 10)
 ```
 
-```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=10, out.width='100%', out.height='100%'}
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=2, fig.height=5}
 plotHeatMap(phyloseq = amplicon,
             taxa_p = 0.1,
             seed = 0,
@@ -531,7 +531,7 @@ plotHeatTree(phyloseq = shotgun,
              text_size = 10)
 ```
 
-```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=5, fig.height=10, out.width='100%', out.height='100%'}
+```{r, message=F, warning=F, error=T, echo = TRUE, fig.width=2, fig.height=5}
 plotHeatMap(phyloseq = shotgun,
             taxa_p = 0.1,
             seed = 0,
