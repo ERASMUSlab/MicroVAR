@@ -219,7 +219,7 @@ bray = plotBetaDiversity(phyloseq = shotgun,
 bray
 ```
 ### Creating Taxonomy Plot
-
+Amplicon
 ```r
 kingdom_taxa <- plotTaxonomyBars(phyloseq = amplicon,
                                 condition_label = c("Fl","Fl_Arg"),
@@ -270,7 +270,57 @@ species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
                                  text_size = 10)
 species_taxa
 ```
+Shotgun
+```r
+kingdom_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Kingdom",
+                                keep_percent = 0,
+                                text_size = 10)
+kingdom_taxa
 
+phylum_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Phylum",
+                                keep_percent = 1,
+                                text_size = 10)
+phylum_taxa
+
+class_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Class",
+                                keep_percent = 1,
+                                text_size = 10)
+class_taxa
+
+order_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Order",
+                                keep_percent = 1,
+                                text_size = 10)
+order_taxa
+
+family_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Family",
+                                keep_percent = 1,
+                                text_size = 10)
+family_taxa
+
+genus_taxa <- plotTaxonomyBars(phyloseq = shotgun,
+                               condition_label = c("Fl","Fl_Arg"),
+                               taxa_level = "Genus",
+                               keep_percent = 1,
+                               text_size = 7)
+genus_taxa
+
+species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                 condition_label = c("Fl","Fl_Arg"),
+                                 taxa_level = "Species",
+                                 keep_percent = 1,
+                                 text_size = 6)
+species_taxa
+```
 ### Differential abundance plot
 Heat tree
 ```r
