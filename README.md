@@ -29,15 +29,10 @@ It integrates 16S rRNA data and shotgun metagenomics data using Phyloseq, genera
 </p>
 
 ## Learn more
-* [This tutorial](https://erasmuslab.github.io/MicroVAR/Tutorial.html) provides more detailed example analyses.
 
 * We conducted analyses using some of the raw data from the paper by [Carda-Diéguez, M., Moazzez, R. & Mira, A. Functional changes in the oral microbiome after use of fluoride and arginine containing dentifrices: a metagenomic and metatranscriptomic study. Microbiome 10, 159 (2022).](https://doi.org/10.1186/s40168-022-01338-4) 
 
-* We conducted analyses using some of the amplicon raw data from the paper by [Zhang Z, Feng Q, Li M, Li Z, Xu Q, Pan X and Chen W (2022) Age-Related Cancer-Associated Microbiota Potentially Promotes Oral Squamous Cell Cancer Tumorigenesis by Distinct Mechanisms. Front. Microbiol. 13:852566.](https://doi.org/10.3389/fmicb.2022.852566). This is the data for the README page.
-
 * The raw data was downloaded from [this BioProject.](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA712952/)
-and [this BioProject](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA803155/)
-
 
 * The preprocessed data used in the example can be downloaded from the link below. If you install a package, you can also load data from within the package.
   - Download the amplicon metadata from [here.](https://github.com/ERASMUSlab/MicroVAR/blob/master/SampleData/AmpliconMetadata.csv)
@@ -61,86 +56,249 @@ We utilized the following packages to preprocess the raw data.
 * Qiime2-2023.07
 * Pircurst2 
 
-```bash
-qiime tools import \
-qiime demux summarize \
-qiime dada2 denoise-paired
-qiime feature-classifier classify-sklearn
-picrust2_pipeline.py
-```
 * Trim Galore
 * Bowtie2
 * Samtools
 * Kraken2
 * Bracken  
 
-## Example analyses
+## Begin microbiome analysis using the MicroVAR package in R
+Download and load the MicroVAR package
 ``` r
+# install.packages("devtools")
+devtools::install_github("ERASMUSlab/MicroVAR")
+
 library(MicroVAR)
 ```
 
 ### Creating Phyloseq Data
 ``` r
-ps <- createAmpPhylo(metadata_path = "AmpliconMetadata.csv",
-                     asv_path = "AmpliconASV.tsv", 
-                     taxa_path = "AmpliconTaxonomy.tsv", 
-                     tree_path = "AmpliconRootedTree.nwk")
-                     
-ps <- createShotPhylo(metadata_path = "ShotgunMetadata.csv"
-                      biom_path = "ShotgunBiomData.biom")
+metadata_path <- system.file("extdata", "AmpliconMetadata.csv", package = "MicroVAR")
+asv_path <- system.file("extdata", "AmpliconASV.tsv", package = "MicroVAR")
+taxa_path <- system.file("extdata", "AmpliconTaxonomy.tsv", package = "MicroVAR")
+tree_path <- system.file("extdata", "AmpliconRootedTree.nwk", package = "MicroVAR")
+
+amplicon <<- createAmpPhylo(metadata_path = metadata_path,
+                            asv_path = asv_path, 
+                            taxa_path = taxa_path, 
+                            tree_path = tree_path)
+amplicon
+```
+
+```{r, message=F, warning=F, error=T, echo = TRUE}
+metadata_path <- system.file("extdata", "ShotgunMetadata.csv", package = "MicroVAR")
+biom_path <- system.file("extdata", "ShotgunBiomData.biom", package = "MicroVAR")
+
+shotgun <<- createShotPhylo(biom_path = biom_path, 
+                            metadata_path = metadata_path)
+shotgun
 ```
 
 ### Creating Alpha Diversity Plot
+Amplicon data
 ```r
-p <- plotAlphaDiversity(phyloseq = ps, 
-                        condition_col = "condition", 
-                        condition_label = c("Young","Old"), 
-                        colors = c('#4DD0E1','#F06292'), 
-                        measure = "Shannon",
-                        text_size = 20)
-p
+shannon <- plotAlphaDiversity(phyloseq = amplicon, 
+                              condition_col = "condition", 
+                              condition_label = c("Fl","Fl_Arg"), 
+                              colors = c('#FFA726','#26A69A'),
+                              measure = "Shannon",
+                              text_size = 15)
+shannon
+
+observed <- plotAlphaDiversity(phyloseq = amplicon,
+                               condition_col = "condition", 
+                               condition_label = c("Fl", "Fl_Arg"), 
+                               colors = c('#FFA726','#26A69A'), 
+                               measure ="Observed",
+                               text_size = 15)
+observed
+
+simpson <- plotAlphaDiversity(phyloseq = amplicon,
+                              condition_col = "condition",
+                              condition_label = c("Fl", "Fl_Arg"),
+                              colors = c('#FFA726','#26A69A'), 
+                              measure ="Simpson",
+                              text_size = 15)
+simpson
+
+chao1 <- plotAlphaDiversity(phyloseq = amplicon,  
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="Chao1",text_size = 15)
+
+chao1 
 ```
-<img src="./Image/AlphaDiversity.png" alt="Picrust" width="300" height="300"/>
+Shotgun data
+```r
+shannon <- plotAlphaDiversity(phyloseq = shotgun, 
+                              condition_col = "condition", 
+                              condition_label = c("Fl","Fl_Arg"), 
+                              colors = c('#FFA726','#26A69A'),
+                              measure = "Shannon",
+                              text_size = 15)
+shannon
+
+observed <- plotAlphaDiversity(phyloseq = shotgun,
+                               condition_col = "condition", 
+                               condition_label = c("Fl", "Fl_Arg"), 
+                               colors = c('#FFA726','#26A69A'), 
+                               measure ="Observed",
+                               text_size = 15)
+observed
+
+simpson <- plotAlphaDiversity(phyloseq = shotgun,
+                              condition_col = "condition",
+                              condition_label = c("Fl", "Fl_Arg"),
+                              colors = c('#FFA726','#26A69A'), 
+                              measure ="Simpson",
+                              text_size = 15)
+simpson
+
+chao1 <- plotAlphaDiversity(phyloseq = shotgun,  
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="Chao1",text_size = 15)
+
+chao1 
+```
 
 ### Creating Beta Diversity Plot
+Amplicon data
 ```r
-#Example
-p <- plotBetaDiversity(phyloseq = ps, 
-                       condition_col = "condition", 
-                       condition_label = c("Young","Old"), 
-                       colors = c('#4DD0E1','#F06292'), 
-                       measure = "bray",
-                       text_size = 20)
-p
-```
-<img src="./Image/BetaDiversity.png" alt="Picrust" width="300" height="300"/>
+jaccard = plotBetaDiversity(phyloseq = amplicon,
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="jaccard",
+                            text_size = 15)
+jaccard
 
+bray = plotBetaDiversity(phyloseq = amplicon, 
+                         condition_col = "condition", 
+                         condition_label = c("Fl", "Fl_Arg"), 
+                         colors = c('#FFA726','#26A69A'), 
+                         measure ="bray",
+                         text_size = 15)
+bray
+
+wunifrac = plotBetaDiversity(phyloseq = amplicon,
+                             condition_col = "condition", 
+                             condition_label = c("Fl", "Fl_Arg"), 
+                             colors = c('#FFA726','#26A69A'), 
+                             measure ="wunifrac",
+                             text_size = 15)
+wunifrac
+
+unifrac = plotBetaDiversity(phyloseq = amplicon, 
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="unifrac",
+                            text_size = 15)
+unifrac
+```
+Shotgun data
+* The unifrac method requires a phylogenetic tree, so it cannot be used with shotgun data.
+```r
+jaccard = plotBetaDiversity(phyloseq = shotgun,
+                            condition_col = "condition", 
+                            condition_label = c("Fl", "Fl_Arg"), 
+                            colors = c('#FFA726','#26A69A'), 
+                            measure ="jaccard",
+                            text_size = 15)
+jaccard
+
+bray = plotBetaDiversity(phyloseq = shotgun, 
+                         condition_col = "condition", 
+                         condition_label = c("Fl", "Fl_Arg"), 
+                         colors = c('#FFA726','#26A69A'), 
+                         measure ="bray",
+                         text_size = 15)
+bray
+```
 ### Creating Taxonomy Plot
+
 ```r
-p <- plotTaxonomyBars(phyloseq = ps, 
-                      condition_label = c("Young","Old"), 
-                      taxa_level = "Phylum", 
-                      keep_percent = 1)
-p
+kingdom_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Kingdom",
+                                keep_percent = 0,
+                                text_size = 10)
+kingdom_taxa
+
+phylum_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Phylum",
+                                keep_percent = 1,
+                                text_size = 10)
+phylum_taxa
+
+class_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Class",
+                                keep_percent = 1,
+                                text_size = 10)
+class_taxa
+
+order_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Order",
+                                keep_percent = 1,
+                                text_size = 10)
+order_taxa
+
+family_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                condition_label = c("Fl","Fl_Arg"),
+                                taxa_level = "Family",
+                                keep_percent = 1,
+                                text_size = 7)
+family_taxa
+
+genus_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                               condition_label = c("Fl","Fl_Arg"),
+                               taxa_level = "Genus",
+                               keep_percent = 1,
+                               text_size = 7)
+genus_taxa
+
+species_taxa <- plotTaxonomyBars(phyloseq = amplicon,
+                                 condition_label = c("Fl","Fl_Arg"),
+                                 taxa_level = "Species",
+                                 keep_percent = 1,
+                                 text_size = 10)
+species_taxa
 ```
-<img src="./Image/TaxaBarPlot.png" alt="Picrust" width="300" height="300"/>
 
-
-### Creating HeatTree Plot
+### Differential abundance plot
+Heat tree
 ```r
-p <- plotHeatTree(phyloseq = ps,
-                  taxa_p = 0.1,
-                  seed = 0,
-                  p_adjust = "BH", 
-                  group ="condition",
-                  condition_label = c("Young", "Old"), 
-                  pvalue_cutoff = 0.05, 
-                  norm = "CLR",
-                  clade_label_level = 7,
-                  lade_label_font_size = 6, 
-                  colors = c('#4DD0E1','#F06292'), 
-                  text_size = 17)
-p
+plotHeatTree(phyloseq = amplicon,
+             taxa_p = 0.1,
+             seed = 0,
+             p_adjust = "BH",
+             group ="condition",
+             condition_label = c("Fl", "Fl_Arg"),
+             pvalue_cutoff = 0.05, 
+             norm = "TSS",
+             clade_label_level = 7,
+             lade_label_font_size = 10,
+             colors = c('#FFA726','#26A69A'),
+             text_size = 10)
+```
+Heat map 
+```r
+plotHeatMap(phyloseq = amplicon,
+            taxa_p = 0.1,
+            seed = 0,
+            p_adjust = "BH",
+            group = "condition",
+            condition_label = c("Fl", "Fl_Arg"), 
+            pvalue_cutoff = 0.05,
+            norm = "TSS",
+            annotation_colors = c('#FFA726', '#26A69A'))
+```
 ```
 <img src="./Image/HeatTree.png" alt="Picrust" width="400" height="300"/>
 
