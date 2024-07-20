@@ -12,7 +12,6 @@ URL: https://github.com/ERASMUSlab/MicroVAR
 BugReports: https://github.com/ERASMUSlab/MicroVAR/issues
 Imports: 
     dplyr,
-    ggpicrust2,
     ggplot2,
     microbiomeMarker,
     phyloseq,
