@@ -299,7 +299,6 @@ plotHeatMap(phyloseq = amplicon,
             norm = "TSS",
             annotation_colors = c('#FFA726', '#26A69A'))
 ```
-```
-<img src="./Image/HeatTree.png" alt="Picrust" width="400" height="300"/>
+
 
 
