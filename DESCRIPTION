@@ -22,5 +22,3 @@ Imports:
     pheatmap
 Depends: 
     tidyverse
-Suggests: 
-    learnr
